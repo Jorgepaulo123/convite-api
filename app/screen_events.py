@@ -7,8 +7,8 @@ from app.ws_manager import screen_hub
 
 
 async def broadcast_photo(row: GuestPhoto, db: Session) -> None:
-    row.displayed_at = datetime.now(timezone.utc)
-    db.commit()
+    if not screen_hub.connections:
+        return
     await screen_hub.broadcast(
         {
             "type": "toast",
@@ -20,11 +20,13 @@ async def broadcast_photo(row: GuestPhoto, db: Session) -> None:
             },
         }
     )
+    row.displayed_at = datetime.now(timezone.utc)
+    db.commit()
 
 
 async def broadcast_message(row: Felicitation, db: Session) -> None:
-    row.displayed_at = datetime.now(timezone.utc)
-    db.commit()
+    if not screen_hub.connections:
+        return
     await screen_hub.broadcast(
         {
             "type": "toast",
@@ -36,6 +38,8 @@ async def broadcast_message(row: Felicitation, db: Session) -> None:
             },
         }
     )
+    row.displayed_at = datetime.now(timezone.utc)
+    db.commit()
 
 
 async def broadcast_screen_state(payload: dict) -> None:
