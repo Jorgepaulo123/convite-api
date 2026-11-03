@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.auth import require_admin
 from app.database import get_db
-from app.models import Felicitation, GalleryItem, GuestPhoto, ScreenMedia, ScreenMode, ScreenState
+from app.models import Felicitation, GuestPhoto, ScreenLiveSlide, ScreenMedia, ScreenMode, ScreenState
 from app.schemas import (
     FelicitationRecent,
     ScreenLiveSlideOut,
@@ -48,7 +48,7 @@ def _build_screen_state(db: Session) -> ScreenStateOut:
         media = db.query(ScreenMedia).filter(ScreenMedia.id == state.active_media_id).first()
         if media:
             active = ScreenMediaOut(id=media.id, url=media.file_path, media_type=media.media_type)
-    slides = db.query(GalleryItem).order_by(GalleryItem.sort_order, GalleryItem.id).all()
+    slides = db.query(ScreenLiveSlide).order_by(ScreenLiveSlide.sort_order, ScreenLiveSlide.id).all()
     live_slides = [ScreenLiveSlideOut(id=s.id, url=s.file_path, sort_order=s.sort_order) for s in slides]
     return ScreenStateOut(mode=ScreenMode(state.mode), active_media=active, live_slides=live_slides)
 
@@ -123,6 +123,36 @@ async def upload_screen_media(
 def list_screen_media(db: Session = Depends(get_db)) -> list[ScreenMediaOut]:
     rows = db.query(ScreenMedia).order_by(ScreenMedia.created_at.desc()).limit(50).all()
     return [ScreenMediaOut(id=r.id, url=r.file_path, media_type=r.media_type) for r in rows]
+
+
+@admin_router.post("/live-slides", response_model=ScreenLiveSlideOut, status_code=201)
+async def upload_live_slide(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+) -> ScreenLiveSlideOut:
+    from app.screen_events import broadcast_screen_state
+
+    url = save_upload(file, "screen-live", ALLOWED_IMAGE)
+    sort_order = db.query(ScreenLiveSlide).count()
+    slide = ScreenLiveSlide(file_path=url, sort_order=sort_order)
+    db.add(slide)
+    db.commit()
+    db.refresh(slide)
+    out = _build_screen_state(db)
+    await broadcast_screen_state(out.model_dump(mode="json"))
+    return ScreenLiveSlideOut(id=slide.id, url=slide.file_path, sort_order=slide.sort_order)
+
+
+@admin_router.delete("/live-slides/{slide_id}", status_code=204)
+async def delete_live_slide(slide_id: int, db: Session = Depends(get_db)) -> None:
+    from app.screen_events import broadcast_screen_state
+
+    slide = db.query(ScreenLiveSlide).filter(ScreenLiveSlide.id == slide_id).first()
+    if slide:
+        db.delete(slide)
+        db.commit()
+        out = _build_screen_state(db)
+        await broadcast_screen_state(out.model_dump(mode="json"))
 
 
 @admin_router.patch("/media/{media_id}/active", response_model=ScreenStateOut)

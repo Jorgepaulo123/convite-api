@@ -60,9 +60,4 @@ async def upload_guest_photo(
     db.add(GalleryItem(file_path=url, sort_order=sort_order))
     db.commit()
     db.refresh(row)
-    from app.routers.screen import _build_screen_state
-    from app.screen_events import broadcast_screen_state
-
-    screen_out = _build_screen_state(db)
-    await broadcast_screen_state(screen_out.model_dump(mode="json"))
     return {"ok": True, "id": row.id, "url": url}
