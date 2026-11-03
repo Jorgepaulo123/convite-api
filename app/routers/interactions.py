@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models import Felicitation, GalleryItem, Guest, GuestPhoto, RsvpStatus
 from app.schemas import FelicitationCreate, PresentAck, RsvpCreate
-from app.screen_events import broadcast_message
+from app.screen_events import broadcast_message, broadcast_photo
 from app.utils import ALLOWED_IMAGE, save_upload
 
 router = APIRouter(tags=["interactions"])
@@ -60,4 +60,5 @@ async def upload_guest_photo(
     db.add(GalleryItem(file_path=url, sort_order=sort_order))
     db.commit()
     db.refresh(row)
+    await broadcast_photo(row, db)
     return {"ok": True, "id": row.id, "url": url}
