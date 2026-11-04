@@ -26,6 +26,17 @@ def normalize_guest_code(raw: str) -> str:
     return "".join(c for c in raw if c.isdigit())
 
 
+def sync_guest_codes_from_contacts(db: Session) -> None:
+    """Alinha code = dígitos do contacto (convidados criados com API antiga)."""
+    for guest in db.query(Guest).order_by(Guest.id):
+        digits = normalize_guest_code(guest.contact)
+        if len(digits) < GUEST_CODE_MIN_LEN or guest.code == digits:
+            continue
+        if db.query(Guest).filter(Guest.code == digits, Guest.id != guest.id).first():
+            continue
+        guest.code = digits
+
+
 def guest_code_from_contact(contact: str) -> str:
     digits = normalize_guest_code(contact)
     if len(digits) < GUEST_CODE_MIN_LEN:

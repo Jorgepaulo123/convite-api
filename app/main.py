@@ -8,6 +8,7 @@ from app.config import UPLOAD_DIR, settings
 from app.database import Base, SessionLocal, engine
 from app.routers import admin, admin_public, event, gallery, guests, interactions, program, screen, ws_screen
 from app.seed import seed_event, seed_program
+from app.utils import sync_guest_codes_from_contacts
 
 
 @asynccontextmanager
@@ -17,6 +18,7 @@ async def lifespan(_app: FastAPI):
     try:
         seed_event(db)
         seed_program(db)
+        sync_guest_codes_from_contacts(db)
         db.commit()
     finally:
         db.close()
