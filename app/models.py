@@ -31,7 +31,7 @@ class Guest(Base):
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String(200), nullable=False)
     contact: Mapped[str] = mapped_column(String(120), nullable=False)
-    code: Mapped[str] = mapped_column(String(6), unique=True, index=True, nullable=False)
+    code: Mapped[str] = mapped_column(String(20), unique=True, index=True, nullable=False)
     table_name: Mapped[str | None] = mapped_column(String(80), nullable=True)
     rsvp_status: Mapped[str] = mapped_column(String(20), default=RsvpStatus.pending.value, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

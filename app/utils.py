@@ -1,4 +1,3 @@
-import secrets
 import uuid
 from io import BytesIO
 from pathlib import Path
@@ -19,12 +18,24 @@ GUEST_SELFIE_MAX_EDGE = 1280
 GUEST_SELFIE_JPEG_QUALITY = 82
 
 
-def generate_guest_code(db: Session) -> str:
-    for _ in range(200):
-        code = f"{secrets.randbelow(10**6):06d}"
-        if db.query(Guest).filter(Guest.code == code).first() is None:
-            return code
-    raise HTTPException(status_code=500, detail="Não foi possível gerar código único.")
+GUEST_CODE_MIN_LEN = 8
+GUEST_CODE_MAX_LEN = 15
+
+
+def normalize_guest_code(raw: str) -> str:
+    return "".join(c for c in raw if c.isdigit())
+
+
+def guest_code_from_contact(contact: str) -> str:
+    digits = normalize_guest_code(contact)
+    if len(digits) < GUEST_CODE_MIN_LEN:
+        raise HTTPException(
+            status_code=400,
+            detail="Contacto inválido. Use o número de telemóvel completo (mín. 8 dígitos).",
+        )
+    if len(digits) > GUEST_CODE_MAX_LEN:
+        raise HTTPException(status_code=400, detail="Contacto demasiado longo.")
+    return digits
 
 
 def guest_to_public(g: Guest) -> dict:

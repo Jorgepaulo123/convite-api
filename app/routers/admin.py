@@ -5,7 +5,7 @@ from app.auth import require_admin
 from app.database import get_db
 from app.models import Felicitation, Guest, GuestPhoto
 from app.schemas import FelicitationAdmin, GuestAdmin, GuestCreate, GuestPhotoAdmin, GuestUpdate
-from app.utils import generate_guest_code, guest_to_public
+from app.utils import guest_code_from_contact, guest_to_public
 
 router = APIRouter(prefix="/admin", tags=["admin"], dependencies=[Depends(require_admin)])
 
@@ -26,8 +26,11 @@ def list_guests(db: Session = Depends(get_db)) -> list[GuestAdmin]:
 
 @router.post("/guests", response_model=GuestAdmin, status_code=201)
 def create_guest(body: GuestCreate, db: Session = Depends(get_db)) -> GuestAdmin:
-    code = generate_guest_code(db)
-    guest = Guest(name=body.name.strip(), contact=body.contact.strip(), code=code, table_name=body.table)
+    contact = body.contact.strip()
+    code = guest_code_from_contact(contact)
+    if db.query(Guest).filter(Guest.code == code).first():
+        raise HTTPException(status_code=409, detail="Já existe convidado com este número de contacto.")
+    guest = Guest(name=body.name.strip(), contact=contact, code=code, table_name=body.table)
     db.add(guest)
     db.commit()
     db.refresh(guest)
@@ -47,7 +50,13 @@ def update_guest(guest_id: int, body: GuestUpdate, db: Session = Depends(get_db)
     if body.name is not None:
         guest.name = body.name.strip()
     if body.contact is not None:
-        guest.contact = body.contact.strip()
+        contact = body.contact.strip()
+        code = guest_code_from_contact(contact)
+        other = db.query(Guest).filter(Guest.code == code, Guest.id != guest_id).first()
+        if other:
+            raise HTTPException(status_code=409, detail="Já existe convidado com este número de contacto.")
+        guest.contact = contact
+        guest.code = code
     if body.table is not None:
         guest.table_name = body.table.strip() or None
     db.commit()

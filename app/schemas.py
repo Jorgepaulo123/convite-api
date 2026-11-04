@@ -37,16 +37,16 @@ class GuestUpdate(BaseModel):
 
 
 class CodeVerify(BaseModel):
-    code: str = Field(min_length=6, max_length=6, pattern=r"^\d{6}$")
+    code: str = Field(min_length=8, max_length=15, pattern=r"^\d{8,15}$")
 
 
 class RsvpCreate(BaseModel):
-    code: str = Field(min_length=6, max_length=6, pattern=r"^\d{6}$")
+    code: str = Field(min_length=8, max_length=15, pattern=r"^\d{8,15}$")
     status: RsvpStatus
 
 
 class FelicitationCreate(BaseModel):
-    code: str = Field(min_length=6, max_length=6, pattern=r"^\d{6}$")
+    code: str = Field(min_length=8, max_length=15, pattern=r"^\d{8,15}$")
     message: str = Field(min_length=1, max_length=2000)
 
 
@@ -121,7 +121,7 @@ ScreenToast = ScreenToastPhoto | ScreenToastMessage
 
 
 class PresentAck(BaseModel):
-    code: str = Field(min_length=6, max_length=6, pattern=r"^\d{6}$")
+    code: str = Field(min_length=8, max_length=15, pattern=r"^\d{8,15}$")
 
 
 class EventInfoOut(BaseModel):

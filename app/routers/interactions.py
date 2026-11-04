@@ -5,7 +5,7 @@ from app.database import get_db
 from app.models import Felicitation, Guest, GuestPhoto, RsvpStatus
 from app.schemas import FelicitationCreate, PresentAck, RsvpCreate
 from app.screen_events import broadcast_message, broadcast_photo
-from app.utils import save_guest_selfie
+from app.utils import guest_code_from_contact, save_guest_selfie
 
 router = APIRouter(tags=["interactions"])
 
@@ -50,9 +50,7 @@ async def upload_guest_photo(
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
 ) -> dict:
-    if len(code) != 6 or not code.isdigit():
-        raise HTTPException(status_code=400, detail="Código inválido.")
-    guest = _guest_by_code(db, code)
+    guest = _guest_by_code(db, guest_code_from_contact(code))
     url = save_guest_selfie(file)
     row = GuestPhoto(guest_id=guest.id, guest_name=guest.name, file_path=url)
     db.add(row)
