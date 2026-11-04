@@ -2,10 +2,10 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models import Felicitation, GalleryItem, Guest, GuestPhoto, RsvpStatus
+from app.models import Felicitation, Guest, GuestPhoto, RsvpStatus
 from app.schemas import FelicitationCreate, PresentAck, RsvpCreate
 from app.screen_events import broadcast_message, broadcast_photo
-from app.utils import ALLOWED_IMAGE, save_upload
+from app.utils import save_guest_selfie
 
 router = APIRouter(tags=["interactions"])
 
@@ -53,11 +53,9 @@ async def upload_guest_photo(
     if len(code) != 6 or not code.isdigit():
         raise HTTPException(status_code=400, detail="Código inválido.")
     guest = _guest_by_code(db, code)
-    url = save_upload(file, "guest-photos", ALLOWED_IMAGE)
+    url = save_guest_selfie(file)
     row = GuestPhoto(guest_id=guest.id, guest_name=guest.name, file_path=url)
     db.add(row)
-    sort_order = db.query(GalleryItem).count()
-    db.add(GalleryItem(file_path=url, sort_order=sort_order))
     db.commit()
     db.refresh(row)
     await broadcast_photo(row, db)

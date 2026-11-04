@@ -7,7 +7,6 @@ from fastapi.staticfiles import StaticFiles
 from app.config import UPLOAD_DIR, settings
 from app.database import Base, SessionLocal, engine
 from app.routers import admin, admin_public, event, gallery, guests, interactions, program, screen, ws_screen
-from app.models import GalleryItem, GuestPhoto
 from app.seed import seed_event, seed_program
 
 
@@ -18,14 +17,6 @@ async def lifespan(_app: FastAPI):
     try:
         seed_event(db)
         seed_program(db)
-        existing_paths = {row.file_path for row in db.query(GalleryItem.file_path).all()}
-        order = db.query(GalleryItem).count()
-        for photo in db.query(GuestPhoto).order_by(GuestPhoto.created_at, GuestPhoto.id):
-            if photo.file_path in existing_paths:
-                continue
-            db.add(GalleryItem(file_path=photo.file_path, sort_order=order))
-            existing_paths.add(photo.file_path)
-            order += 1
         db.commit()
     finally:
         db.close()
