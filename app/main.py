@@ -11,6 +11,7 @@ from app.routers import (
     admin,
     admin_public,
     checkin,
+    drinks,
     event,
     gallery,
     guests,
@@ -66,6 +67,10 @@ app.include_router(program.router, prefix="/api")
 app.include_router(program.admin_router, prefix="/api")
 app.include_router(event.router, prefix="/api")
 app.include_router(event.admin_router, prefix="/api")
+app.include_router(drinks.public_router, prefix="/api")
+app.include_router(drinks.orders_router, prefix="/api")
+app.include_router(drinks.admin_router, prefix="/api")
+app.include_router(drinks.admin_orders_router, prefix="/api")
 
 
 @app.get("/health")

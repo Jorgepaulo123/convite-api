@@ -1,7 +1,7 @@
 from datetime import datetime
 from enum import Enum
 
-from sqlalchemy import DateTime, ForeignKey, String, Text, func
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -120,3 +120,39 @@ class ScreenState(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
+
+
+class DrinkOrderStatus(str, Enum):
+    pending = "pending"
+    delivered = "delivered"
+    cancelled = "cancelled"
+
+
+class Drink(Base):
+    __tablename__ = "drinks"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    name: Mapped[str] = mapped_column(String(120), nullable=False)
+    quantity: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    sort_order: Mapped[int] = mapped_column(default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    orders: Mapped[list["DrinkOrder"]] = relationship(back_populates="drink")
+
+
+class DrinkOrder(Base):
+    __tablename__ = "drink_orders"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    guest_id: Mapped[int | None] = mapped_column(ForeignKey("guests.id"), nullable=True)
+    guest_name: Mapped[str] = mapped_column(String(200), nullable=False)
+    drink_id: Mapped[int] = mapped_column(ForeignKey("drinks.id"), nullable=False)
+    drink_name: Mapped[str] = mapped_column(String(120), nullable=False)
+    quantity: Mapped[int] = mapped_column(Integer, nullable=False)
+    status: Mapped[str] = mapped_column(String(20), default=DrinkOrderStatus.pending.value, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    delivered_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    drink: Mapped[Drink] = relationship(back_populates="orders")
+    guest: Mapped[Guest | None] = relationship()
