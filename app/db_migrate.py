@@ -18,3 +18,20 @@ def ensure_guest_checkin_column() -> None:
         ddl = "ALTER TABLE guests ADD COLUMN checked_in_at TIMESTAMPTZ"
     with engine.begin() as conn:
         conn.execute(text(ddl))
+
+
+def ensure_drink_image_column() -> None:
+    insp = inspect(engine)
+    if "drinks" not in insp.get_table_names():
+        return
+    cols = {c["name"] for c in insp.get_columns("drinks")}
+    if "image_path" in cols:
+        return
+    dialect = engine.dialect.name
+    ddl = (
+        "ALTER TABLE drinks ADD COLUMN image_path VARCHAR(500)"
+        if dialect != "sqlite"
+        else "ALTER TABLE drinks ADD COLUMN image_path VARCHAR(500)"
+    )
+    with engine.begin() as conn:
+        conn.execute(text(ddl))

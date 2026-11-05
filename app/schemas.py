@@ -196,8 +196,7 @@ class DrinkOut(BaseModel):
     quantity: int
     active: bool
     sort_order: int
-
-    model_config = {"from_attributes": True}
+    image_url: str | None = None
 
 
 class DrinkCreate(BaseModel):

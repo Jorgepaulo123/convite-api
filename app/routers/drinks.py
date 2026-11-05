@@ -1,19 +1,19 @@
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
 from sqlalchemy.orm import Session
 
 from app.auth import require_admin
 from app.database import get_db
 from app.models import Drink, DrinkOrder, DrinkOrderStatus, Guest
 from app.schemas import (
-    DrinkCreate,
     DrinkOrderCreate,
     DrinkOrderOut,
     DrinkOrderStatusUpdate,
     DrinkOut,
     DrinkUpdate,
 )
+from app.utils import ALLOWED_IMAGE, save_upload
 
 router = APIRouter(tags=["drinks"])
 public_router = APIRouter(prefix="/drinks", tags=["drinks"])
@@ -30,6 +30,17 @@ admin_orders_router = APIRouter(
 )
 
 
+def _drink_out(row: Drink) -> DrinkOut:
+    return DrinkOut(
+        id=row.id,
+        name=row.name,
+        quantity=row.quantity,
+        active=row.active,
+        sort_order=row.sort_order,
+        image_url=row.image_path,
+    )
+
+
 def _order_out(row: DrinkOrder) -> DrinkOrderOut:
     return DrinkOrderOut.model_validate(row)
 
@@ -42,7 +53,7 @@ def list_drinks_catalog(db: Session = Depends(get_db)) -> list[DrinkOut]:
         .order_by(Drink.sort_order, Drink.id)
         .all()
     )
-    return [DrinkOut.model_validate(r) for r in rows]
+    return [_drink_out(r) for r in rows]
 
 
 @orders_router.post("", response_model=DrinkOrderOut, status_code=201)
@@ -123,17 +134,42 @@ def update_order_status(
 @admin_router.get("", response_model=list[DrinkOut])
 def admin_list_drinks(db: Session = Depends(get_db)) -> list[DrinkOut]:
     rows = db.query(Drink).order_by(Drink.sort_order, Drink.id).all()
-    return [DrinkOut.model_validate(r) for r in rows]
+    return [_drink_out(r) for r in rows]
 
 
 @admin_router.post("", response_model=DrinkOut, status_code=201)
-def admin_create_drink(body: DrinkCreate, db: Session = Depends(get_db)) -> DrinkOut:
+async def admin_create_drink(
+    name: str = Form(...),
+    quantity: int = Form(...),
+    file: UploadFile | None = File(default=None),
+    db: Session = Depends(get_db),
+) -> DrinkOut:
+    if quantity < 0 or quantity > 100_000:
+        raise HTTPException(status_code=400, detail="Quantidade inválida.")
+    image_path = None
+    if file and file.filename:
+        image_path = save_upload(file, "drinks", ALLOWED_IMAGE)
     max_order = db.query(Drink).count()
-    row = Drink(name=body.name.strip(), quantity=body.quantity, sort_order=max_order)
+    row = Drink(name=name.strip(), quantity=quantity, sort_order=max_order, image_path=image_path)
     db.add(row)
     db.commit()
     db.refresh(row)
-    return DrinkOut.model_validate(row)
+    return _drink_out(row)
+
+
+@admin_router.post("/{drink_id}/photo", response_model=DrinkOut)
+async def admin_upload_drink_photo(
+    drink_id: int,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+) -> DrinkOut:
+    row = db.query(Drink).filter(Drink.id == drink_id).first()
+    if not row:
+        raise HTTPException(status_code=404, detail="Bebida não encontrada.")
+    row.image_path = save_upload(file, "drinks", ALLOWED_IMAGE)
+    db.commit()
+    db.refresh(row)
+    return _drink_out(row)
 
 
 @admin_router.patch("/{drink_id}", response_model=DrinkOut)
@@ -151,7 +187,7 @@ def admin_update_drink(drink_id: int, body: DrinkUpdate, db: Session = Depends(g
         row.sort_order = body.sort_order
     db.commit()
     db.refresh(row)
-    return DrinkOut.model_validate(row)
+    return _drink_out(row)
 
 
 @admin_router.delete("/{drink_id}", status_code=204)

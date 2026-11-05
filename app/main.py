@@ -6,7 +6,7 @@ from fastapi.staticfiles import StaticFiles
 
 from app.config import UPLOAD_DIR, settings
 from app.database import Base, SessionLocal, engine
-from app.db_migrate import ensure_guest_checkin_column
+from app.db_migrate import ensure_drink_image_column, ensure_guest_checkin_column
 from app.routers import (
     admin,
     admin_public,
@@ -29,6 +29,7 @@ from app.utils import sync_guest_codes_from_contacts
 async def lifespan(_app: FastAPI):
     Base.metadata.create_all(bind=engine)
     ensure_guest_checkin_column()
+    ensure_drink_image_column()
     db = SessionLocal()
     try:
         seed_event(db)
