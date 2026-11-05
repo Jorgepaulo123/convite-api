@@ -18,6 +18,7 @@ class GuestAdmin(GuestPublic):
     id: int
     contact: str
     created_at: datetime
+    checked_in_at: datetime | None = None
 
 
 class AdminLogin(BaseModel):
@@ -152,3 +153,25 @@ class ProgramItemUpdate(BaseModel):
     title: str | None = Field(default=None, max_length=200)
     time: str | None = Field(default=None, max_length=40)
     sort_order: int | None = None
+
+
+class CheckinResult(BaseModel):
+    ok: bool
+    on_list: bool
+    name: str | None = None
+    table: str | None = None
+    already_checked_in: bool = False
+    message: str
+
+
+class CheckinRecent(BaseModel):
+    name: str
+    table: str | None = None
+    checked_in_at: datetime
+
+
+class AttendanceStats(BaseModel):
+    total_guests: int
+    checked_in: int
+    remaining: int
+    recent: list[CheckinRecent]

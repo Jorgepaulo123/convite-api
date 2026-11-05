@@ -6,7 +6,8 @@ from fastapi.staticfiles import StaticFiles
 
 from app.config import UPLOAD_DIR, settings
 from app.database import Base, SessionLocal, engine
-from app.routers import admin, admin_public, event, gallery, guests, interactions, program, screen, ws_screen
+from app.db_migrate import ensure_guest_checkin_column
+from app.routers import admin, admin_public, checkin, event, gallery, guests, interactions, program, screen, ws_screen
 from app.seed import seed_event, seed_program
 from app.utils import sync_guest_codes_from_contacts
 
@@ -14,6 +15,7 @@ from app.utils import sync_guest_codes_from_contacts
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     Base.metadata.create_all(bind=engine)
+    ensure_guest_checkin_column()
     db = SessionLocal()
     try:
         seed_event(db)
@@ -38,6 +40,7 @@ app.add_middleware(
 app.mount("/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
 
 app.include_router(guests.router, prefix="/api")
+app.include_router(checkin.router, prefix="/api")
 app.include_router(admin_public.router, prefix="/api")
 app.include_router(admin.router, prefix="/api")
 app.include_router(gallery.router, prefix="/api")

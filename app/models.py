@@ -34,6 +34,7 @@ class Guest(Base):
     code: Mapped[str] = mapped_column(String(20), unique=True, index=True, nullable=False)
     table_name: Mapped[str | None] = mapped_column(String(80), nullable=True)
     rsvp_status: Mapped[str] = mapped_column(String(20), default=RsvpStatus.pending.value, nullable=False)
+    checked_in_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     felicitacoes: Mapped[list["Felicitation"]] = relationship(back_populates="guest")

@@ -18,6 +18,7 @@ def list_guests(db: Session = Depends(get_db)) -> list[GuestAdmin]:
             id=g.id,
             contact=g.contact,
             created_at=g.created_at,
+            checked_in_at=g.checked_in_at,
             **guest_to_public(g),
         )
         for g in rows
@@ -38,6 +39,7 @@ def create_guest(body: GuestCreate, db: Session = Depends(get_db)) -> GuestAdmin
         id=guest.id,
         contact=guest.contact,
         created_at=guest.created_at,
+        checked_in_at=guest.checked_in_at,
         **guest_to_public(guest),
     )
 
@@ -65,6 +67,7 @@ def update_guest(guest_id: int, body: GuestUpdate, db: Session = Depends(get_db)
         id=guest.id,
         contact=guest.contact,
         created_at=guest.created_at,
+        checked_in_at=guest.checked_in_at,
         **guest_to_public(guest),
     )
 
