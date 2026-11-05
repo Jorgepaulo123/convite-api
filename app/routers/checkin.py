@@ -115,23 +115,24 @@ async def uncheck_presence(body: CodeVerify, db: Session = Depends(get_db)) -> C
 def attendance_stats(db: Session = Depends(get_db)) -> AttendanceStats:
     total = db.query(Guest).count()
     checked = db.query(Guest).filter(Guest.checked_in_at.isnot(None)).count()
-    recent_rows = (
+    present_rows = (
         db.query(Guest)
         .filter(Guest.checked_in_at.isnot(None))
         .order_by(Guest.checked_in_at.desc())
-        .limit(15)
         .all()
     )
-    recent = [
+    present_guests = [
         CheckinRecent(name=g.name, table=g.table_name, checked_in_at=g.checked_in_at)
-        for g in recent_rows
+        for g in present_rows
         if g.checked_in_at is not None
     ]
+    recent = present_guests[:15]
     return AttendanceStats(
         total_guests=total,
         checked_in=checked,
         remaining=max(0, total - checked),
         recent=recent,
+        present_guests=present_guests,
     )
 
 

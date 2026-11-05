@@ -128,11 +128,19 @@ class DrinkOrderStatus(str, Enum):
     cancelled = "cancelled"
 
 
+class DrinkCategory(str, Enum):
+    cerveja = "CERVEJA"
+    vinhos = "VINHOS"
+    whisky = "WHISKY"
+    champanhe = "CHAMPANHE"
+
+
 class Drink(Base):
     __tablename__ = "drinks"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String(120), nullable=False)
+    category: Mapped[str] = mapped_column(String(20), default=DrinkCategory.cerveja.value, nullable=False)
     image_path: Mapped[str | None] = mapped_column(String(500), nullable=True)
     quantity: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)

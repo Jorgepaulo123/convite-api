@@ -35,3 +35,15 @@ def ensure_drink_image_column() -> None:
     )
     with engine.begin() as conn:
         conn.execute(text(ddl))
+
+
+def ensure_drink_category_column() -> None:
+    insp = inspect(engine)
+    if "drinks" not in insp.get_table_names():
+        return
+    cols = {c["name"] for c in insp.get_columns("drinks")}
+    if "category" in cols:
+        return
+    with engine.begin() as conn:
+        conn.execute(text("ALTER TABLE drinks ADD COLUMN category VARCHAR(20) DEFAULT 'CERVEJA'"))
+        conn.execute(text("UPDATE drinks SET category = 'CERVEJA' WHERE category IS NULL"))

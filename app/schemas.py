@@ -2,7 +2,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, Field
 
-from app.models import DrinkOrderStatus, RsvpStatus, ScreenMode
+from app.models import DrinkCategory, DrinkOrderStatus, RsvpStatus, ScreenMode
 
 
 class GuestPublic(BaseModel):
@@ -175,6 +175,7 @@ class AttendanceStats(BaseModel):
     checked_in: int
     remaining: int
     recent: list[CheckinRecent]
+    present_guests: list[CheckinRecent] = []
 
 
 class CheckinRosterGuest(BaseModel):
@@ -193,6 +194,7 @@ class CheckinRoster(BaseModel):
 class DrinkOut(BaseModel):
     id: int
     name: str
+    category: DrinkCategory
     quantity: int
     active: bool
     sort_order: int
@@ -206,6 +208,7 @@ class DrinkCreate(BaseModel):
 
 class DrinkUpdate(BaseModel):
     name: str | None = Field(default=None, max_length=120)
+    category: DrinkCategory | None = None
     quantity: int | None = Field(default=None, ge=0, le=100_000)
     active: bool | None = None
     sort_order: int | None = None

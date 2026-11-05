@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.auth import require_admin
 from app.database import get_db
-from app.models import Drink, DrinkOrder, DrinkOrderStatus, Guest
+from app.models import Drink, DrinkCategory, DrinkOrder, DrinkOrderStatus, Guest
 from app.schemas import (
     DrinkOrderCreate,
     DrinkOrderOut,
@@ -30,10 +30,19 @@ admin_orders_router = APIRouter(
 )
 
 
+def _parse_category(raw: str) -> DrinkCategory:
+    try:
+        return DrinkCategory(raw.strip().upper())
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail="Categoria inválida.") from exc
+
+
 def _drink_out(row: Drink) -> DrinkOut:
+    cat = row.category if row.category in {c.value for c in DrinkCategory} else DrinkCategory.cerveja.value
     return DrinkOut(
         id=row.id,
         name=row.name,
+        category=DrinkCategory(cat),
         quantity=row.quantity,
         active=row.active,
         sort_order=row.sort_order,
@@ -46,13 +55,14 @@ def _order_out(row: DrinkOrder) -> DrinkOrderOut:
 
 
 @public_router.get("", response_model=list[DrinkOut])
-def list_drinks_catalog(db: Session = Depends(get_db)) -> list[DrinkOut]:
-    rows = (
-        db.query(Drink)
-        .filter(Drink.active.is_(True))
-        .order_by(Drink.sort_order, Drink.id)
-        .all()
-    )
+def list_drinks_catalog(
+    category: DrinkCategory | None = Query(default=None),
+    db: Session = Depends(get_db),
+) -> list[DrinkOut]:
+    q = db.query(Drink).filter(Drink.active.is_(True))
+    if category is not None:
+        q = q.filter(Drink.category == category.value)
+    rows = q.order_by(Drink.sort_order, Drink.id).all()
     return [_drink_out(r) for r in rows]
 
 
@@ -141,16 +151,24 @@ def admin_list_drinks(db: Session = Depends(get_db)) -> list[DrinkOut]:
 async def admin_create_drink(
     name: str = Form(...),
     quantity: int = Form(...),
+    category: str = Form(default=DrinkCategory.cerveja.value),
     file: UploadFile | None = File(default=None),
     db: Session = Depends(get_db),
 ) -> DrinkOut:
     if quantity < 0 or quantity > 100_000:
         raise HTTPException(status_code=400, detail="Quantidade inválida.")
+    cat = _parse_category(category)
     image_path = None
     if file and file.filename:
         image_path = save_upload(file, "drinks", ALLOWED_IMAGE)
     max_order = db.query(Drink).count()
-    row = Drink(name=name.strip(), quantity=quantity, sort_order=max_order, image_path=image_path)
+    row = Drink(
+        name=name.strip(),
+        category=cat.value,
+        quantity=quantity,
+        sort_order=max_order,
+        image_path=image_path,
+    )
     db.add(row)
     db.commit()
     db.refresh(row)
@@ -179,6 +197,8 @@ def admin_update_drink(drink_id: int, body: DrinkUpdate, db: Session = Depends(g
         raise HTTPException(status_code=404, detail="Bebida não encontrada.")
     if body.name is not None:
         row.name = body.name.strip()
+    if body.category is not None:
+        row.category = body.category.value
     if body.quantity is not None:
         row.quantity = body.quantity
     if body.active is not None:
