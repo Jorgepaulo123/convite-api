@@ -5,7 +5,14 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models import Guest
-from app.schemas import AttendanceStats, CheckinRecent, CheckinResult, CodeVerify
+from app.schemas import (
+    AttendanceStats,
+    CheckinRecent,
+    CheckinResult,
+    CheckinRoster,
+    CheckinRosterGuest,
+    CodeVerify,
+)
 from app.utils import guest_code_from_contact
 
 router = APIRouter(prefix="/checkin", tags=["checkin"])
@@ -67,4 +74,23 @@ def attendance_stats(db: Session = Depends(get_db)) -> AttendanceStats:
         checked_in=checked,
         remaining=max(0, total - checked),
         recent=recent,
+    )
+
+
+@router.get("/roster", response_model=CheckinRoster)
+def checkin_roster(db: Session = Depends(get_db)) -> CheckinRoster:
+    rows = db.query(Guest).order_by(Guest.name.asc()).all()
+    checked = sum(1 for g in rows if g.checked_in_at is not None)
+    return CheckinRoster(
+        total_guests=len(rows),
+        checked_in=checked,
+        guests=[
+            CheckinRosterGuest(
+                name=g.name,
+                table=g.table_name,
+                code=g.code,
+                checked_in_at=g.checked_in_at,
+            )
+            for g in rows
+        ],
     )

@@ -175,3 +175,16 @@ class AttendanceStats(BaseModel):
     checked_in: int
     remaining: int
     recent: list[CheckinRecent]
+
+
+class CheckinRosterGuest(BaseModel):
+    name: str
+    table: str | None = None
+    code: str
+    checked_in_at: datetime | None = None
+
+
+class CheckinRoster(BaseModel):
+    total_guests: int
+    checked_in: int
+    guests: list[CheckinRosterGuest]
