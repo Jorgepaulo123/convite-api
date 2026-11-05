@@ -34,3 +34,7 @@ async def broadcast_attendance_checkin(
             },
         }
     )
+
+
+async def broadcast_attendance_refresh(*, checked_in: int, total_guests: int) -> None:
+    await broadcast_attendance_stats(checked_in=checked_in, total_guests=total_guests)

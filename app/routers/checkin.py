@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from app.checkin_events import broadcast_attendance_checkin
+from app.checkin_events import broadcast_attendance_checkin, broadcast_attendance_refresh
 from app.database import get_db
 from app.models import Guest
 from app.schemas import (
@@ -61,6 +61,53 @@ async def register_checkin(body: CodeVerify, db: Session = Depends(get_db)) -> C
         table=guest.table_name,
         already_checked_in=already,
         message="Presença registada. Bem-vindo(a)!" if not already else "Entrada já registada anteriormente.",
+    )
+
+
+@router.post("/uncheck", response_model=CheckinResult)
+async def uncheck_presence(body: CodeVerify, db: Session = Depends(get_db)) -> CheckinResult:
+    try:
+        code = guest_code_from_contact(body.code)
+    except HTTPException:
+        return CheckinResult(
+            ok=False,
+            on_list=False,
+            message="Introduza um número de telemóvel válido (mín. 8 dígitos).",
+        )
+
+    guest = db.query(Guest).filter(Guest.code == code).first()
+    if not guest:
+        return CheckinResult(
+            ok=False,
+            on_list=False,
+            message="Este número não está na lista de convidados.",
+        )
+
+    if guest.checked_in_at is None:
+        return CheckinResult(
+            ok=True,
+            on_list=True,
+            name=guest.name,
+            table=guest.table_name,
+            already_checked_in=False,
+            message="Este convidado ainda não tinha entrada registada.",
+        )
+
+    guest.checked_in_at = None
+    db.commit()
+    db.refresh(guest)
+
+    total = db.query(Guest).count()
+    checked = db.query(Guest).filter(Guest.checked_in_at.isnot(None)).count()
+    await broadcast_attendance_refresh(checked_in=checked, total_guests=total)
+
+    return CheckinResult(
+        ok=True,
+        on_list=True,
+        name=guest.name,
+        table=guest.table_name,
+        already_checked_in=False,
+        message="Entrada removida.",
     )
 
 
