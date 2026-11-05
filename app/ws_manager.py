@@ -30,3 +30,4 @@ class ScreenHub:
 
 
 screen_hub = ScreenHub()
+attendance_hub = ScreenHub()

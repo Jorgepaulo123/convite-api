@@ -7,7 +7,19 @@ from fastapi.staticfiles import StaticFiles
 from app.config import UPLOAD_DIR, settings
 from app.database import Base, SessionLocal, engine
 from app.db_migrate import ensure_guest_checkin_column
-from app.routers import admin, admin_public, checkin, event, gallery, guests, interactions, program, screen, ws_screen
+from app.routers import (
+    admin,
+    admin_public,
+    checkin,
+    event,
+    gallery,
+    guests,
+    interactions,
+    program,
+    screen,
+    ws_checkin,
+    ws_screen,
+)
 from app.seed import seed_event, seed_program
 from app.utils import sync_guest_codes_from_contacts
 
@@ -49,6 +61,7 @@ app.include_router(interactions.router, prefix="/api")
 app.include_router(screen.router, prefix="/api")
 app.include_router(screen.admin_router, prefix="/api")
 app.include_router(ws_screen.router, prefix="/api")
+app.include_router(ws_checkin.router, prefix="/api")
 app.include_router(program.router, prefix="/api")
 app.include_router(program.admin_router, prefix="/api")
 app.include_router(event.router, prefix="/api")

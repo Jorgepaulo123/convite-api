@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
+from app.checkin_events import broadcast_attendance_checkin
 from app.database import get_db
 from app.models import Guest
 from app.schemas import (
@@ -19,7 +20,7 @@ router = APIRouter(prefix="/checkin", tags=["checkin"])
 
 
 @router.post("", response_model=CheckinResult)
-def register_checkin(body: CodeVerify, db: Session = Depends(get_db)) -> CheckinResult:
+async def register_checkin(body: CodeVerify, db: Session = Depends(get_db)) -> CheckinResult:
     try:
         code = guest_code_from_contact(body.code)
     except HTTPException:
@@ -42,6 +43,16 @@ def register_checkin(body: CodeVerify, db: Session = Depends(get_db)) -> Checkin
         guest.checked_in_at = datetime.now(timezone.utc)
         db.commit()
         db.refresh(guest)
+
+    total = db.query(Guest).count()
+    checked = db.query(Guest).filter(Guest.checked_in_at.isnot(None)).count()
+    await broadcast_attendance_checkin(
+        name=guest.name,
+        table=guest.table_name,
+        checked_in=checked,
+        total_guests=total,
+        already_checked_in=already,
+    )
 
     return CheckinResult(
         ok=True,
