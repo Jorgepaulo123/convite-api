@@ -85,6 +85,7 @@ def create_drink_order(body: DrinkOrderCreate, db: Session = Depends(get_db)) ->
     order = DrinkOrder(
         guest_id=guest.id,
         guest_name=guest.name,
+        guest_table=guest.table_name,
         drink_id=drink.id,
         drink_name=drink.name,
         quantity=body.quantity,

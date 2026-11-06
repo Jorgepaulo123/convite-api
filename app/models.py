@@ -156,6 +156,7 @@ class DrinkOrder(Base):
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     guest_id: Mapped[int | None] = mapped_column(ForeignKey("guests.id"), nullable=True)
     guest_name: Mapped[str] = mapped_column(String(200), nullable=False)
+    guest_table: Mapped[str | None] = mapped_column(String(80), nullable=True)
     drink_id: Mapped[int] = mapped_column(ForeignKey("drinks.id"), nullable=False)
     drink_name: Mapped[str] = mapped_column(String(120), nullable=False)
     quantity: Mapped[int] = mapped_column(Integer, nullable=False)

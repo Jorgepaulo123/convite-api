@@ -223,6 +223,7 @@ class DrinkOrderCreate(BaseModel):
 class DrinkOrderOut(BaseModel):
     id: int
     guest_name: str
+    guest_table: str | None = None
     drink_name: str
     quantity: int
     status: DrinkOrderStatus

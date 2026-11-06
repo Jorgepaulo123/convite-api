@@ -47,3 +47,14 @@ def ensure_drink_category_column() -> None:
     with engine.begin() as conn:
         conn.execute(text("ALTER TABLE drinks ADD COLUMN category VARCHAR(20) DEFAULT 'CERVEJA'"))
         conn.execute(text("UPDATE drinks SET category = 'CERVEJA' WHERE category IS NULL"))
+
+
+def ensure_drink_order_guest_table_column() -> None:
+    insp = inspect(engine)
+    if "drink_orders" not in insp.get_table_names():
+        return
+    cols = {c["name"] for c in insp.get_columns("drink_orders")}
+    if "guest_table" in cols:
+        return
+    with engine.begin() as conn:
+        conn.execute(text("ALTER TABLE drink_orders ADD COLUMN guest_table VARCHAR(80)"))
