@@ -58,3 +58,15 @@ def ensure_drink_order_guest_table_column() -> None:
         return
     with engine.begin() as conn:
         conn.execute(text("ALTER TABLE drink_orders ADD COLUMN guest_table VARCHAR(80)"))
+
+
+def ensure_guest_party_size_column() -> None:
+    insp = inspect(engine)
+    if "guests" not in insp.get_table_names():
+        return
+    cols = {c["name"] for c in insp.get_columns("guests")}
+    if "party_size" in cols:
+        return
+    with engine.begin() as conn:
+        conn.execute(text("ALTER TABLE guests ADD COLUMN party_size INTEGER DEFAULT 1"))
+        conn.execute(text("UPDATE guests SET party_size = 1 WHERE party_size IS NULL"))

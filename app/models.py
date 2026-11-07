@@ -33,6 +33,7 @@ class Guest(Base):
     contact: Mapped[str] = mapped_column(String(120), nullable=False)
     code: Mapped[str] = mapped_column(String(20), unique=True, index=True, nullable=False)
     table_name: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    party_size: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
     rsvp_status: Mapped[str] = mapped_column(String(20), default=RsvpStatus.pending.value, nullable=False)
     checked_in_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

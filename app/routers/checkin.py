@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from app.checkin_events import broadcast_attendance_checkin, broadcast_attendance_refresh
@@ -14,20 +14,34 @@ from app.schemas import (
     CheckinRosterGuest,
     CodeVerify,
 )
-from app.utils import guest_code_from_contact
+from app.utils import GUEST_CODE_MIN_LEN, normalize_guest_code
 
 router = APIRouter(prefix="/checkin", tags=["checkin"])
 
 
+def _checkin_lookup_code(raw: str) -> str | None:
+    code = normalize_guest_code(raw)
+    if len(code) < GUEST_CODE_MIN_LEN:
+        return None
+    return code
+
+
+def _guest_checkin_payload(guest: Guest) -> dict:
+    return {
+        "name": guest.name,
+        "table": guest.table_name,
+        "party_size": guest.party_size or 1,
+    }
+
+
 @router.post("", response_model=CheckinResult)
 async def register_checkin(body: CodeVerify, db: Session = Depends(get_db)) -> CheckinResult:
-    try:
-        code = guest_code_from_contact(body.code)
-    except HTTPException:
+    code = _checkin_lookup_code(body.code)
+    if not code:
         return CheckinResult(
             ok=False,
             on_list=False,
-            message="Introduza um número de telemóvel válido (mín. 8 dígitos).",
+            message="Introduza um código de acesso válido (mín. 6 dígitos).",
         )
 
     guest = db.query(Guest).filter(Guest.code == code).first()
@@ -57,22 +71,20 @@ async def register_checkin(body: CodeVerify, db: Session = Depends(get_db)) -> C
     return CheckinResult(
         ok=True,
         on_list=True,
-        name=guest.name,
-        table=guest.table_name,
         already_checked_in=already,
         message="Presença registada. Bem-vindo(a)!" if not already else "Entrada já registada anteriormente.",
+        **_guest_checkin_payload(guest),
     )
 
 
 @router.post("/uncheck", response_model=CheckinResult)
 async def uncheck_presence(body: CodeVerify, db: Session = Depends(get_db)) -> CheckinResult:
-    try:
-        code = guest_code_from_contact(body.code)
-    except HTTPException:
+    code = _checkin_lookup_code(body.code)
+    if not code:
         return CheckinResult(
             ok=False,
             on_list=False,
-            message="Introduza um número de telemóvel válido (mín. 8 dígitos).",
+            message="Introduza um código de acesso válido (mín. 6 dígitos).",
         )
 
     guest = db.query(Guest).filter(Guest.code == code).first()
@@ -87,10 +99,9 @@ async def uncheck_presence(body: CodeVerify, db: Session = Depends(get_db)) -> C
         return CheckinResult(
             ok=True,
             on_list=True,
-            name=guest.name,
-            table=guest.table_name,
             already_checked_in=False,
             message="Este convidado ainda não tinha entrada registada.",
+            **_guest_checkin_payload(guest),
         )
 
     guest.checked_in_at = None
@@ -104,10 +115,9 @@ async def uncheck_presence(body: CodeVerify, db: Session = Depends(get_db)) -> C
     return CheckinResult(
         ok=True,
         on_list=True,
-        name=guest.name,
-        table=guest.table_name,
         already_checked_in=False,
         message="Entrada removida.",
+        **_guest_checkin_payload(guest),
     )
 
 

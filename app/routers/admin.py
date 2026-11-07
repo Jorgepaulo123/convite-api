@@ -17,6 +17,7 @@ def list_guests(db: Session = Depends(get_db)) -> list[GuestAdmin]:
         GuestAdmin(
             id=g.id,
             contact=g.contact,
+            party_size=g.party_size or 1,
             created_at=g.created_at,
             checked_in_at=g.checked_in_at,
             **guest_to_public(g),
@@ -45,6 +46,7 @@ def create_guest(body: GuestCreate, db: Session = Depends(get_db)) -> GuestAdmin
         contact=contact,
         code=code,
         table_name=table_name,
+        party_size=body.party_size,
     )
     db.add(guest)
     db.commit()
@@ -52,6 +54,7 @@ def create_guest(body: GuestCreate, db: Session = Depends(get_db)) -> GuestAdmin
     return GuestAdmin(
         id=guest.id,
         contact=guest.contact,
+        party_size=guest.party_size or 1,
         created_at=guest.created_at,
         checked_in_at=guest.checked_in_at,
         **guest_to_public(guest),
@@ -75,11 +78,14 @@ def update_guest(guest_id: int, body: GuestUpdate, db: Session = Depends(get_db)
         guest.code = code
     if body.table is not None:
         guest.table_name = body.table.strip() or None
+    if body.party_size is not None:
+        guest.party_size = body.party_size
     db.commit()
     db.refresh(guest)
     return GuestAdmin(
         id=guest.id,
         contact=guest.contact,
+        party_size=guest.party_size or 1,
         created_at=guest.created_at,
         checked_in_at=guest.checked_in_at,
         **guest_to_public(guest),

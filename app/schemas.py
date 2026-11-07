@@ -17,6 +17,7 @@ class GuestPublic(BaseModel):
 class GuestAdmin(GuestPublic):
     id: int
     contact: str
+    party_size: int = 1
     created_at: datetime
     checked_in_at: datetime | None = None
 
@@ -29,12 +30,14 @@ class GuestCreate(BaseModel):
     name: str = Field(min_length=1, max_length=200)
     contact: str = Field(default="", max_length=120)
     table: str | None = Field(default=None, max_length=80)
+    party_size: int = Field(default=1, ge=1, le=20)
 
 
 class GuestUpdate(BaseModel):
     name: str | None = Field(default=None, max_length=200)
     contact: str | None = Field(default=None, max_length=120)
     table: str | None = Field(default=None, max_length=80)
+    party_size: int | None = Field(default=None, ge=1, le=20)
 
 
 class CodeVerify(BaseModel):
@@ -160,6 +163,7 @@ class CheckinResult(BaseModel):
     on_list: bool
     name: str | None = None
     table: str | None = None
+    party_size: int | None = None
     already_checked_in: bool = False
     message: str
 

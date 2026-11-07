@@ -11,6 +11,7 @@ from app.db_migrate import (
     ensure_drink_image_column,
     ensure_drink_order_guest_table_column,
     ensure_guest_checkin_column,
+    ensure_guest_party_size_column,
 )
 from app.routers import (
     admin,
@@ -34,6 +35,7 @@ from app.utils import sync_guest_codes_from_contacts
 async def lifespan(_app: FastAPI):
     Base.metadata.create_all(bind=engine)
     ensure_guest_checkin_column()
+    ensure_guest_party_size_column()
     ensure_drink_image_column()
     ensure_drink_category_column()
     ensure_drink_order_guest_table_column()
