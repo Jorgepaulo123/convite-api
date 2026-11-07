@@ -5,7 +5,7 @@ from app.auth import require_admin
 from app.database import get_db
 from app.models import Felicitation, Guest, GuestPhoto
 from app.schemas import FelicitationAdmin, GuestAdmin, GuestCreate, GuestPhotoAdmin, GuestUpdate
-from app.utils import guest_code_from_contact, guest_to_public
+from app.utils import guest_code_from_contact, guest_to_public, resolve_guest_table
 
 router = APIRouter(prefix="/admin", tags=["admin"], dependencies=[Depends(require_admin)])
 
@@ -31,7 +31,12 @@ def create_guest(body: GuestCreate, db: Session = Depends(get_db)) -> GuestAdmin
     code = guest_code_from_contact(contact)
     if db.query(Guest).filter(Guest.code == code).first():
         raise HTTPException(status_code=409, detail="Já existe convidado com este número de contacto.")
-    guest = Guest(name=body.name.strip(), contact=contact, code=code, table_name=body.table)
+    guest = Guest(
+        name=body.name.strip(),
+        contact=contact,
+        code=code,
+        table_name=resolve_guest_table(body.table),
+    )
     db.add(guest)
     db.commit()
     db.refresh(guest)

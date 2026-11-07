@@ -1,3 +1,4 @@
+import secrets
 import uuid
 from io import BytesIO
 from pathlib import Path
@@ -47,6 +48,17 @@ def guest_code_from_contact(contact: str) -> str:
     if len(digits) > GUEST_CODE_MAX_LEN:
         raise HTTPException(status_code=400, detail="Contacto demasiado longo.")
     return digits
+
+
+def random_table_code() -> str:
+    """Código numérico de 6 dígitos para mesa (quando não indicada no cadastro)."""
+    return f"{secrets.randbelow(1_000_000):06d}"
+
+
+def resolve_guest_table(raw: str | None) -> str:
+    if raw is not None and raw.strip():
+        return raw.strip()
+    return random_table_code()
 
 
 def guest_to_public(g: Guest) -> dict:
