@@ -19,8 +19,10 @@ GUEST_SELFIE_MAX_EDGE = 1280
 GUEST_SELFIE_JPEG_QUALITY = 82
 
 
-GUEST_CODE_MIN_LEN = 8
+GUEST_CODE_MIN_LEN = 6
 GUEST_CODE_MAX_LEN = 15
+GUEST_PHONE_MIN_LEN = 8
+GUEST_RANDOM_CODE_LEN = 6
 
 
 def normalize_guest_code(raw: str) -> str:
@@ -31,7 +33,7 @@ def sync_guest_codes_from_contacts(db: Session) -> None:
     """Alinha code = dígitos do contacto (convidados criados com API antiga)."""
     for guest in db.query(Guest).order_by(Guest.id):
         digits = normalize_guest_code(guest.contact)
-        if len(digits) < GUEST_CODE_MIN_LEN or guest.code == digits:
+        if len(digits) < GUEST_PHONE_MIN_LEN or guest.code == digits:
             continue
         if db.query(Guest).filter(Guest.code == digits, Guest.id != guest.id).first():
             continue
@@ -40,7 +42,7 @@ def sync_guest_codes_from_contacts(db: Session) -> None:
 
 def guest_code_from_contact(contact: str) -> str:
     digits = normalize_guest_code(contact)
-    if len(digits) < GUEST_CODE_MIN_LEN:
+    if len(digits) < GUEST_PHONE_MIN_LEN:
         raise HTTPException(
             status_code=400,
             detail="Contacto inválido. Use o número de telemóvel completo (mín. 8 dígitos).",
@@ -50,15 +52,13 @@ def guest_code_from_contact(contact: str) -> str:
     return digits
 
 
-def random_table_code() -> str:
-    """Código numérico de 6 dígitos para mesa (quando não indicada no cadastro)."""
-    return f"{secrets.randbelow(1_000_000):06d}"
-
-
-def resolve_guest_table(raw: str | None) -> str:
-    if raw is not None and raw.strip():
-        return raw.strip()
-    return random_table_code()
+def allocate_random_guest_code(db: Session) -> str:
+    """Código numérico de 6 dígitos quando o telemóvel não é indicado no cadastro."""
+    for _ in range(80):
+        code = f"{secrets.randbelow(10**GUEST_RANDOM_CODE_LEN):0{GUEST_RANDOM_CODE_LEN}d}"
+        if not db.query(Guest).filter(Guest.code == code).first():
+            return code
+    raise HTTPException(status_code=500, detail="Não foi possível gerar código de acesso único.")
 
 
 def guest_to_public(g: Guest) -> dict:

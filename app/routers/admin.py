@@ -5,7 +5,7 @@ from app.auth import require_admin
 from app.database import get_db
 from app.models import Felicitation, Guest, GuestPhoto
 from app.schemas import FelicitationAdmin, GuestAdmin, GuestCreate, GuestPhotoAdmin, GuestUpdate
-from app.utils import guest_code_from_contact, guest_to_public, resolve_guest_table
+from app.utils import allocate_random_guest_code, guest_code_from_contact, guest_to_public
 
 router = APIRouter(prefix="/admin", tags=["admin"], dependencies=[Depends(require_admin)])
 
@@ -27,15 +27,24 @@ def list_guests(db: Session = Depends(get_db)) -> list[GuestAdmin]:
 
 @router.post("/guests", response_model=GuestAdmin, status_code=201)
 def create_guest(body: GuestCreate, db: Session = Depends(get_db)) -> GuestAdmin:
-    contact = body.contact.strip()
-    code = guest_code_from_contact(contact)
+    raw_contact = (body.contact or "").strip()
+    table_name = body.table.strip() if body.table and body.table.strip() else None
+
+    if raw_contact:
+        code = guest_code_from_contact(raw_contact)
+        contact = raw_contact
+    else:
+        code = allocate_random_guest_code(db)
+        contact = code
+
     if db.query(Guest).filter(Guest.code == code).first():
-        raise HTTPException(status_code=409, detail="Já existe convidado com este número de contacto.")
+        raise HTTPException(status_code=409, detail="Já existe convidado com este código de acesso.")
+
     guest = Guest(
         name=body.name.strip(),
         contact=contact,
         code=code,
-        table_name=resolve_guest_table(body.table),
+        table_name=table_name,
     )
     db.add(guest)
     db.commit()

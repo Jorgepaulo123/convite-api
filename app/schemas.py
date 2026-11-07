@@ -27,7 +27,7 @@ class AdminLogin(BaseModel):
 
 class GuestCreate(BaseModel):
     name: str = Field(min_length=1, max_length=200)
-    contact: str = Field(min_length=1, max_length=120)
+    contact: str = Field(default="", max_length=120)
     table: str | None = Field(default=None, max_length=80)
 
 
@@ -38,16 +38,16 @@ class GuestUpdate(BaseModel):
 
 
 class CodeVerify(BaseModel):
-    code: str = Field(min_length=8, max_length=15, pattern=r"^\d{8,15}$")
+    code: str = Field(min_length=6, max_length=15, pattern=r"^\d{6,15}$")
 
 
 class RsvpCreate(BaseModel):
-    code: str = Field(min_length=8, max_length=15, pattern=r"^\d{8,15}$")
+    code: str = Field(min_length=6, max_length=15, pattern=r"^\d{6,15}$")
     status: RsvpStatus
 
 
 class FelicitationCreate(BaseModel):
-    code: str = Field(min_length=8, max_length=15, pattern=r"^\d{8,15}$")
+    code: str = Field(min_length=6, max_length=15, pattern=r"^\d{6,15}$")
     message: str = Field(min_length=1, max_length=2000)
 
 
@@ -122,7 +122,7 @@ ScreenToast = ScreenToastPhoto | ScreenToastMessage
 
 
 class PresentAck(BaseModel):
-    code: str = Field(min_length=8, max_length=15, pattern=r"^\d{8,15}$")
+    code: str = Field(min_length=6, max_length=15, pattern=r"^\d{6,15}$")
 
 
 class EventInfoOut(BaseModel):
@@ -215,7 +215,7 @@ class DrinkUpdate(BaseModel):
 
 
 class DrinkOrderCreate(BaseModel):
-    code: str = Field(min_length=8, max_length=15, pattern=r"^\d{8,15}$")
+    code: str = Field(min_length=6, max_length=15, pattern=r"^\d{6,15}$")
     drink_id: int = Field(ge=1)
     quantity: int = Field(ge=1, le=50)
 
