@@ -134,6 +134,9 @@ class DrinkCategory(str, Enum):
     vinhos = "VINHOS"
     whisky = "WHISKY"
     champanhe = "CHAMPANHE"
+    sumos = "SUMOS"
+    refrigerante = "REFRIGERANTE"
+    outras = "OUTRAS"
 
 
 class Drink(Base):
