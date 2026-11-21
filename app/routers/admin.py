@@ -107,6 +107,15 @@ def list_felicitacoes(db: Session = Depends(get_db)) -> list[FelicitationAdmin]:
     return [FelicitationAdmin.model_validate(r) for r in rows]
 
 
+@router.delete("/felicitacoes/{felicitation_id}", status_code=204)
+def delete_felicitation(felicitation_id: int, db: Session = Depends(get_db)) -> None:
+    row = db.query(Felicitation).filter(Felicitation.id == felicitation_id).first()
+    if not row:
+        raise HTTPException(status_code=404, detail="Felicitação não encontrada.")
+    db.delete(row)
+    db.commit()
+
+
 @router.get("/guest-photos", response_model=list[GuestPhotoAdmin])
 def list_guest_photos(db: Session = Depends(get_db)) -> list[GuestPhotoAdmin]:
     rows = db.query(GuestPhoto).order_by(GuestPhoto.created_at.desc()).limit(200).all()

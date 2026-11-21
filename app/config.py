@@ -12,7 +12,12 @@ class Settings(BaseSettings):
 
     admin_api_key: str = "12345678"
     database_url: str = f"sqlite:///{(DATA_DIR / 'kayane.db').as_posix()}"
-    cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000"
+    cors_origins: str = (
+        "http://localhost:5173,http://127.0.0.1:5173,"
+        "http://localhost:5174,http://127.0.0.1:5174,"
+        "http://localhost:3000,https://convite-zeta-liart.vercel.app"
+    )
+    cors_origin_regex: str = r"https://.*\.vercel\.app|http://(localhost|127\.0\.0\.1):\d+"
     max_upload_mb: int = 15
 
     @property

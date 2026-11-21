@@ -60,6 +60,29 @@ def ensure_drink_order_guest_table_column() -> None:
         conn.execute(text("ALTER TABLE drink_orders ADD COLUMN guest_table VARCHAR(80)"))
 
 
+def ensure_nullable_guest_ids() -> None:
+    """Pedidos/felicitações abertas (Irlanda) gravam guest_id NULL."""
+    insp = inspect(engine)
+    dialect = engine.dialect.name
+    tables = {
+        "drink_orders": "guest_id",
+        "felicitacoes": "guest_id",
+    }
+    for table, col in tables.items():
+        if table not in insp.get_table_names():
+            continue
+        info = next((c for c in insp.get_columns(table) if c["name"] == col), None)
+        if not info or info.get("nullable", True):
+            continue
+        with engine.begin() as conn:
+            if dialect == "postgresql":
+                conn.execute(text(f"ALTER TABLE {table} ALTER COLUMN {col} DROP NOT NULL"))
+            elif dialect == "sqlite":
+                # SQLite antigo: CREATE TABLE já veio NOT NULL — recreate não é seguro aqui.
+                # Novas instalações usam o modelo nullable=True.
+                pass
+
+
 def ensure_guest_party_size_column() -> None:
     insp = inspect(engine)
     if "guests" not in insp.get_table_names():

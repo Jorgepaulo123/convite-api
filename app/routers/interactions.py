@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models import Felicitation, Guest, GuestPhoto, RsvpStatus
-from app.schemas import FelicitationCreate, PresentAck, RsvpCreate
+from app.schemas import FelicitationCreate, FelicitationOpenCreate, PresentAck, RsvpCreate
 from app.screen_events import broadcast_message, broadcast_photo
 from app.utils import guest_code_from_contact, save_guest_selfie
 
@@ -37,6 +37,16 @@ def acknowledge_present(body: PresentAck, db: Session = Depends(get_db)) -> dict
 async def create_felicitation(body: FelicitationCreate, db: Session = Depends(get_db)) -> dict:
     guest = _guest_by_code(db, body.code)
     row = Felicitation(guest_id=guest.id, guest_name=guest.name, message=body.message.strip())
+    db.add(row)
+    db.commit()
+    db.refresh(row)
+    await broadcast_message(row, db)
+    return {"ok": True, "id": row.id}
+
+
+@router.post("/felicitacoes/open", status_code=201)
+async def create_felicitation_open(body: FelicitationOpenCreate, db: Session = Depends(get_db)) -> dict:
+    row = Felicitation(guest_id=None, guest_name=body.guest_name, message=body.message)
     db.add(row)
     db.commit()
     db.refresh(row)

@@ -12,6 +12,7 @@ from app.db_migrate import (
     ensure_drink_order_guest_table_column,
     ensure_guest_checkin_column,
     ensure_guest_party_size_column,
+    ensure_nullable_guest_ids,
 )
 from app.routers import (
     admin,
@@ -39,6 +40,7 @@ async def lifespan(_app: FastAPI):
     ensure_drink_image_column()
     ensure_drink_category_column()
     ensure_drink_order_guest_table_column()
+    ensure_nullable_guest_ids()
     db = SessionLocal()
     try:
         seed_event(db)
@@ -55,6 +57,7 @@ app = FastAPI(title="Kayan Graduation API", version="1.0.0", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origin_list,
+    allow_origin_regex=settings.cors_origin_regex,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

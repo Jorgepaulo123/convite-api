@@ -8,6 +8,7 @@ from app.database import get_db
 from app.models import Drink, DrinkCategory, DrinkOrder, DrinkOrderStatus, Guest
 from app.schemas import (
     DrinkOrderCreate,
+    DrinkOrderOpenCreate,
     DrinkOrderOut,
     DrinkOrderStatusUpdate,
     DrinkOut,
@@ -86,6 +87,34 @@ def create_drink_order(body: DrinkOrderCreate, db: Session = Depends(get_db)) ->
         guest_id=guest.id,
         guest_name=guest.name,
         guest_table=guest.table_name,
+        drink_id=drink.id,
+        drink_name=drink.name,
+        quantity=body.quantity,
+        status=DrinkOrderStatus.pending.value,
+    )
+    db.add(order)
+    db.commit()
+    db.refresh(order)
+    return _order_out(order)
+
+
+@orders_router.post("/open", response_model=DrinkOrderOut, status_code=201)
+def create_drink_order_open(body: DrinkOrderOpenCreate, db: Session = Depends(get_db)) -> DrinkOrderOut:
+    drink = db.query(Drink).filter(Drink.id == body.drink_id, Drink.active.is_(True)).first()
+    if not drink:
+        raise HTTPException(status_code=404, detail="Bebida não disponível.")
+    if drink.quantity < body.quantity:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Stock insuficiente. Disponível: {drink.quantity}.",
+        )
+
+    table = body.guest_table
+    drink.quantity -= body.quantity
+    order = DrinkOrder(
+        guest_id=None,
+        guest_name=f"Mesa {table}",
+        guest_table=table,
         drink_id=drink.id,
         drink_name=drink.name,
         quantity=body.quantity,

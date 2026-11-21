@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from app.models import DrinkCategory, DrinkOrderStatus, RsvpStatus, ScreenMode
 
@@ -52,6 +52,25 @@ class RsvpCreate(BaseModel):
 class FelicitationCreate(BaseModel):
     code: str = Field(min_length=6, max_length=15, pattern=r"^\d{6,15}$")
     message: str = Field(min_length=1, max_length=2000)
+
+
+class FelicitationOpenCreate(BaseModel):
+    """Felicitação sem código (app Irlanda / evento aberto)."""
+    guest_name: str = Field(min_length=1, max_length=10)
+    message: str = Field(min_length=1, max_length=2000)
+
+    @field_validator("guest_name")
+    @classmethod
+    def trim_name(cls, v: str) -> str:
+        return v.strip()
+
+    @field_validator("message")
+    @classmethod
+    def limit_words(cls, v: str) -> str:
+        text = " ".join(v.split())
+        if len(text.split()) > 15:
+            raise ValueError("Máximo 15 palavras na mensagem.")
+        return text
 
 
 class FelicitationAdmin(BaseModel):
@@ -222,6 +241,18 @@ class DrinkOrderCreate(BaseModel):
     code: str = Field(min_length=6, max_length=15, pattern=r"^\d{6,15}$")
     drink_id: int = Field(ge=1)
     quantity: int = Field(ge=1, le=50)
+
+
+class DrinkOrderOpenCreate(BaseModel):
+    """Pedido de bebida sem autenticação — identifica pela mesa."""
+    drink_id: int = Field(ge=1)
+    quantity: int = Field(ge=1, le=50)
+    guest_table: str = Field(min_length=1, max_length=80)
+
+    @field_validator("guest_table")
+    @classmethod
+    def trim_table(cls, v: str) -> str:
+        return v.strip()
 
 
 class DrinkOrderOut(BaseModel):
