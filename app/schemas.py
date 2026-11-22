@@ -57,7 +57,7 @@ class FelicitationCreate(BaseModel):
 class FelicitationOpenCreate(BaseModel):
     """Felicitação sem código (app Irlanda / evento aberto)."""
     guest_name: str = Field(min_length=1, max_length=10)
-    message: str = Field(min_length=1, max_length=2000)
+    message: str = Field(min_length=1, max_length=4000)
 
     @field_validator("guest_name")
     @classmethod
@@ -66,11 +66,8 @@ class FelicitationOpenCreate(BaseModel):
 
     @field_validator("message")
     @classmethod
-    def limit_words(cls, v: str) -> str:
-        text = " ".join(v.split())
-        if len(text.split()) > 15:
-            raise ValueError("Máximo 15 palavras na mensagem.")
-        return text
+    def trim_message(cls, v: str) -> str:
+        return v.strip()
 
 
 class FelicitationAdmin(BaseModel):
@@ -241,6 +238,12 @@ class DrinkOrderCreate(BaseModel):
     code: str = Field(min_length=6, max_length=15, pattern=r"^\d{6,15}$")
     drink_id: int = Field(ge=1)
     quantity: int = Field(ge=1, le=50)
+    guest_table: str = Field(min_length=1, max_length=80)
+
+    @field_validator("guest_table")
+    @classmethod
+    def trim_order_table(cls, v: str) -> str:
+        return v.strip()
 
 
 class DrinkOrderOpenCreate(BaseModel):
