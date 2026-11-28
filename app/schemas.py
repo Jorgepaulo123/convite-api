@@ -14,6 +14,11 @@ class GuestPublic(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class BookStatsOut(BaseModel):
+    reads: int
+    downloads: int
+
+
 class GuestAdmin(GuestPublic):
     id: int
     contact: str

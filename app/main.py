@@ -17,6 +17,7 @@ from app.db_migrate import (
 from app.routers import (
     admin,
     admin_public,
+    book,
     checkin,
     drinks,
     event,
@@ -28,7 +29,7 @@ from app.routers import (
     ws_checkin,
     ws_screen,
 )
-from app.seed import seed_event, seed_program
+from app.seed import seed_book_stats, seed_event, seed_program
 from app.utils import sync_guest_codes_from_contacts
 
 
@@ -44,6 +45,7 @@ async def lifespan(_app: FastAPI):
     db = SessionLocal()
     try:
         seed_event(db)
+        seed_book_stats(db)
         seed_program(db)
         sync_guest_codes_from_contacts(db)
         db.commit()
@@ -67,6 +69,7 @@ app.mount("/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
 
 app.include_router(guests.router, prefix="/api")
 app.include_router(checkin.router, prefix="/api")
+app.include_router(book.router, prefix="/api")
 app.include_router(admin_public.router, prefix="/api")
 app.include_router(admin.router, prefix="/api")
 app.include_router(gallery.router, prefix="/api")

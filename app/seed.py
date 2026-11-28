@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 
-from app.models import EventInfo, ProgramItem
+from app.models import BookStats, EventInfo, ProgramItem
 
 DEFAULT_EVENT_DATE = "2026-11-28"
 
@@ -9,6 +9,13 @@ def seed_event(db: Session) -> None:
     if db.query(EventInfo).count() > 0:
         return
     db.add(EventInfo(id=1, event_date=DEFAULT_EVENT_DATE))
+    db.commit()
+
+
+def seed_book_stats(db: Session) -> None:
+    if db.query(BookStats).filter(BookStats.id == 1).first():
+        return
+    db.add(BookStats(id=1, reads=0, downloads=0))
     db.commit()
 
 

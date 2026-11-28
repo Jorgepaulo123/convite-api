@@ -102,6 +102,14 @@ class EventInfo(Base):
     event_date: Mapped[str] = mapped_column(String(10), nullable=False)
 
 
+class BookStats(Base):
+    __tablename__ = "book_stats"
+
+    id: Mapped[int] = mapped_column(primary_key=True, default=1)
+    reads: Mapped[int] = mapped_column(Integer, default=0, server_default="0", nullable=False)
+    downloads: Mapped[int] = mapped_column(Integer, default=0, server_default="0", nullable=False)
+
+
 class ProgramItem(Base):
     __tablename__ = "program_items"
 
